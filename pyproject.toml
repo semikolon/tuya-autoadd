@@ -1,0 +1,20 @@
+[project]
+name = "tuya-autoadd"
+version = "0.1.0"
+description = "Auto-add new Tuya devices to HA LocalTuya without UI clicks"
+requires-python = ">=3.11"
+dependencies = [
+    "tinytuya>=1.16",
+    "requests>=2.32",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8",
+    "pytest-mock>=3.14",
+    "responses>=0.25",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
