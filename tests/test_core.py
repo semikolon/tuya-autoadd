@@ -70,23 +70,41 @@ class TestDiffDevices:
         assert [d.device_id for d in out] == ["dev_ok"]
 
     def test_denylist_by_name_substring(self):
+        # Test the substring mechanism with an explicit substring (the
+        # default constant is currently () after the 2026-06-08 plug
+        # repurpose — Shannon is no longer on Tuya power. The mechanism
+        # itself must keep working for future fleet life-support plugs.)
         cloud = [
             make_cloud("dev_a", name="Bedroom Light"),
-            make_cloud("dev_b", name="Shannon"),  # the power plug
+            make_cloud("dev_b", name="Shannon"),  # case-insensitive
             make_cloud("dev_c", name="shannon"),  # lowercase
             make_cloud("dev_d", name="Office Lamp"),
         ]
         local: list[LocalTuyaDevice] = []
         out = diff_devices(
             cloud, local,
-            denylist_name_substrings=SHANNON_LIFE_SUPPORT_NAME_DENYLIST,
+            denylist_name_substrings=("shannon",),
         )
         ids = [d.device_id for d in out]
         assert "dev_a" in ids
         assert "dev_d" in ids
-        # Shannon-power-plug (any case) must be excluded — life-support
-        assert "dev_b" not in ids, "Shannon-named device must never auto-add"
+        assert "dev_b" not in ids, "Substring match must be case-insensitive"
         assert "dev_c" not in ids, "Case-insensitive substring match required"
+
+    def test_default_name_denylist_is_empty_after_shannon_offload(self):
+        # 2026-06-08: SHANNON_LIFE_SUPPORT_NAME_DENYLIST went from
+        # ("shannon",) to () after the bedroom TV-plug swap. A device
+        # named "Shannon" SHOULD now be auto-added (no life-support
+        # concern); the device-id denylist remains the durable safety
+        # pattern for future fleet plugs.
+        assert SHANNON_LIFE_SUPPORT_NAME_DENYLIST == ()
+        cloud = [make_cloud("dev_shannon_plug", name="Shannon")]
+        local: list[LocalTuyaDevice] = []
+        out = diff_devices(
+            cloud, local,
+            denylist_name_substrings=SHANNON_LIFE_SUPPORT_NAME_DENYLIST,
+        )
+        assert [d.device_id for d in out] == ["dev_shannon_plug"]
 
     def test_denylist_combines_with_existing_local(self):
         cloud = [
@@ -95,9 +113,10 @@ class TestDiffDevices:
             make_cloud("dev3"),
         ]
         local = [make_local("dev1")]
+        # Explicit substring exercises the combined skip-paths (local + denylist).
         out = diff_devices(
             cloud, local,
-            denylist_name_substrings=SHANNON_LIFE_SUPPORT_NAME_DENYLIST,
+            denylist_name_substrings=("shannon",),
         )
         # dev1 in local (skip), dev2 denylisted (skip), dev3 the only add
         assert [d.device_id for d in out] == ["dev3"]

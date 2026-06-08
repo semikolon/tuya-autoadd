@@ -91,13 +91,23 @@ def diff_devices(
     return out
 
 
-# Hard-coded denylist for self-referential life-support — the Tuya
-# plug that powers Shannon must NEVER be auto-added (any "Shannon"-
-# named Tuya device shipped by Fredrik is the powering plug per the
-# directive cluster). Substring match is case-insensitive. Future
-# expansion: add other-fleet-machine powering plugs here if they ever
-# land in the Smart Life account.
-SHANNON_LIFE_SUPPORT_NAME_DENYLIST: tuple[str, ...] = ("shannon",)
+# Hard-coded denylist for self-referential life-support — any Tuya
+# plug that POWERS a fleet machine must NEVER be auto-added to that
+# machine's HA (would let HA cut its own power, reproducing the
+# 2026-05-18 03:00 hard-hang class).
+#
+# 2026-06-08 update: Shannon was moved off Tuya power onto a dumb
+# outlet; the plug formerly named "Shannon" was repurposed to power
+# the bedroom TV. No fleet machine currently runs on a Tuya plug, so
+# the by-name denylist is empty. The device-id denylist (via
+# TUYA_AUTOADD_DENY_IDS env or `denylist_ids` arg) remains the
+# durable safety pattern — device IDs survive Smart Life renames
+# while names track current physical role.
+#
+# If any future fleet machine gets wired to a Tuya plug, add either
+# its device_id (preferred — durable) or its Smart Life name
+# substring (works but breaks on rename) here.
+SHANNON_LIFE_SUPPORT_NAME_DENYLIST: tuple[str, ...] = ()
 
 
 # Tuya category code → LocalTuya entity-type hints. Used by
